@@ -226,7 +226,7 @@ app.get('/admin', basicAuth, (req, res) => {
         cellContent = `<span class="source">${cellContent}</span>`;
       }
       
-      return `<td class="${cellClass}">${cellContent}</td>`;
+      return `<td class="${cellClass}" data-label="${h}">${cellContent}</td>`;
     }).join('');
     
     return `<tr>${cells}</tr>`;
@@ -381,12 +381,22 @@ app.get('/admin', basicAuth, (req, res) => {
       margin-bottom: 10px;
       color: #333;
     }
+    /* Mobile responsive table → card layout */
     @media (max-width: 768px) {
-      .header h1 { font-size: 2rem; }
+      .header h1 { font-size: 1.8rem; }
       .content { padding: 20px; }
       .stats-grid { grid-template-columns: 1fr; }
-      table { font-size: 0.8rem; }
-      thead th, tbody td { padding: 15px 10px; }
+
+      .table-container { box-shadow: none; background: transparent; }
+      table { border-collapse: separate; border-spacing: 0 12px; font-size: 0.9rem; }
+      thead { display: none; }
+      tbody { display: block; }
+      tbody tr { display: block; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.06); padding: 6px 0; }
+      tbody td { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #f1f1f5; padding: 12px 16px; white-space: normal; word-break: break-word; }
+      tbody td:last-child { border-bottom: 0; }
+      tbody td:before { content: attr(data-label); font-weight: 700; color: #5a67d8; text-transform: uppercase; letter-spacing: .3px; margin-right: 12px; flex: 0 0 40%; }
+      tbody td.email { word-break: break-all; }
+      .source { display: inline-block; }
     }
   </style>
   </head>
