@@ -112,6 +112,11 @@ app.post('/api/contact', (req, res) => {
   return res.json({ ok: true });
 });
 
+// Map root path to capitalized Index.html (Linux is case-sensitive)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Index.html'));
+});
+
 // Password-protected admin viewer at /admin
 app.get('/admin', basicAuth, (req, res) => {
   if (!fs.existsSync(submissionsCsvPath)) {
