@@ -134,12 +134,103 @@ app.get('/admin/download', basicAuth, (req, res) => {
 // Password-protected admin viewer at /admin
 app.get('/admin', basicAuth, (req, res) => {
   if (!fs.existsSync(submissionsCsvPath)) {
-    return res.send('<h2>No submissions yet</h2>');
+    return res.send(`
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consultations</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+      text-align: center;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+    }
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 300;
+      margin-bottom: 10px;
+    }
+    .content {
+      padding: 60px 40px;
+    }
+    .empty-state h2 {
+      font-size: 1.8rem;
+      color: #333;
+      margin-bottom: 15px;
+    }
+    .empty-state p {
+      color: #666;
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Consultations Dashboard</h1>
+    </div>
+    <div class="content">
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <h2>No Consultations Yet</h2>
+        <p>When patients book consultations through your website, they will appear here. Share your website link to start receiving bookings!</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`);
   }
   const csv = fs.readFileSync(submissionsCsvPath, 'utf8');
   const { headers, records } = parseCsv(csv);
-  const th = headers.map(h => `<th style="text-align:left;padding:8px;border-bottom:1px solid #ddd;">${h}</th>`).join('');
-  const trs = records.map(r => `<tr>${headers.map(h => `<td style="padding:8px;border-bottom:1px solid #eee;white-space:pre-wrap;">${r[h]}</td>`).join('')}</tr>`).join('');
+  const th = headers.map(h => `<th>${h}</th>`).join('');
+  const trs = records.map(r => {
+    const cells = headers.map((h, idx) => {
+      let cellClass = '';
+      let cellContent = r[h] || '';
+      
+      if (h === 'timestamp') {
+        cellClass = 'timestamp';
+        cellContent = new Date(cellContent).toLocaleString();
+      } else if (h === 'name') {
+        cellClass = 'name';
+      } else if (h === 'email') {
+        cellClass = 'email';
+      } else if (h === 'source') {
+        cellClass = 'source';
+        cellContent = `<span class="source">${cellContent}</span>`;
+      }
+      
+      return `<td class="${cellClass}">${cellContent}</td>`;
+    }).join('');
+    
+    return `<tr>${cells}</tr>`;
+  }).join('');
   res.send(`
 <!doctype html>
 <html>
@@ -147,15 +238,196 @@ app.get('/admin', basicAuth, (req, res) => {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Consultations</title>
-  <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:20px} table{border-collapse:collapse;width:100%} thead{background:#f8f8f8} h1{margin-bottom:16px} .download-btn{background:#007bff;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;margin-bottom:20px;text-decoration:none;display:inline-block} .download-btn:hover{background:#0056b3}</style>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 300;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 40px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .stat-card h3 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .stat-card p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    .download-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-bottom: 30px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+      font-weight: 500;
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+    }
+    .table-container {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    thead th {
+      padding: 20px 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    tbody tr {
+      border-bottom: 1px solid #f0f0f0;
+      transition: all 0.3s ease;
+    }
+    tbody tr:hover {
+      background: #f8f9ff;
+      transform: scale(1.01);
+    }
+    tbody td {
+      padding: 20px 15px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .timestamp {
+      color: #666;
+      font-size: 0.85rem;
+    }
+    .name {
+      font-weight: 600;
+      color: #333;
+    }
+    .email {
+      color: #667eea;
+    }
+    .source {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .empty-state h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    @media (max-width: 768px) {
+      .header h1 { font-size: 2rem; }
+      .content { padding: 20px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      table { font-size: 0.8rem; }
+      thead th, tbody td { padding: 15px 10px; }
+    }
+  </style>
   </head>
 <body>
-  <h1>Consultations (${records.length})</h1>
-  <a href="/admin/download" class="download-btn">📥 Download CSV</a>
-  <table>
-    <thead><tr>${th}</tr></thead>
-    <tbody>${trs}</tbody>
-  </table>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Consultations Dashboard</h1>
+      <p>Manage and track all consultation bookings</p>
+    </div>
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>${records.length}</h3>
+          <p>Total Consultations</p>
+        </div>
+        <div class="stat-card">
+          <h3>${records.filter(r => r.source === 'hero').length}</h3>
+          <p>Hero Form</p>
+        </div>
+        <div class="stat-card">
+          <h3>${records.filter(r => r.source === 'popup').length}</h3>
+          <p>Popup Form</p>
+        </div>
+        <div class="stat-card">
+          <h3>${new Date().toLocaleDateString()}</h3>
+          <p>Last Updated</p>
+        </div>
+      </div>
+      
+      <a href="/admin/download" class="download-btn">
+        📥 Download CSV Report
+      </a>
+      
+      <div class="table-container">
+        <table>
+          <thead><tr>${th}</tr></thead>
+          <tbody>${trs}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </body>
 </html>`);
 });
