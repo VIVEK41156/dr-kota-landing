@@ -117,6 +117,20 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'Index.html'));
 });
 
+// Download CSV endpoint
+app.get('/admin/download', basicAuth, (req, res) => {
+  if (!fs.existsSync(submissionsCsvPath)) {
+    return res.status(404).send('No submissions found');
+  }
+  
+  const csv = fs.readFileSync(submissionsCsvPath, 'utf8');
+  const filename = `consultations-${new Date().toISOString().split('T')[0]}.csv`;
+  
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
+});
+
 // Password-protected admin viewer at /admin
 app.get('/admin', basicAuth, (req, res) => {
   if (!fs.existsSync(submissionsCsvPath)) {
@@ -133,10 +147,11 @@ app.get('/admin', basicAuth, (req, res) => {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Consultations</title>
-  <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:20px} table{border-collapse:collapse;width:100%} thead{background:#f8f8f8} h1{margin-bottom:16px}</style>
+  <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:20px} table{border-collapse:collapse;width:100%} thead{background:#f8f8f8} h1{margin-bottom:16px} .download-btn{background:#007bff;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;margin-bottom:20px;text-decoration:none;display:inline-block} .download-btn:hover{background:#0056b3}</style>
   </head>
 <body>
   <h1>Consultations (${records.length})</h1>
+  <a href="/admin/download" class="download-btn">📥 Download CSV</a>
   <table>
     <thead><tr>${th}</tr></thead>
     <tbody>${trs}</tbody>
