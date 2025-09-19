@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: dr-kota-landing
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS
+        value: change-me
+
